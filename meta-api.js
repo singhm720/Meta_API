@@ -7,9 +7,9 @@ const SPREADSHEET_ID = '1FC4YU02p-HtU9dmQPgsVsuMx1Fe_f_HyhwpIhUol4RQ';
 const SHEET_NAME = 'Testing_Sheet';
 const fetchMetaData = async () => {
   try {
-    const apiUrl = 'https://developers.facebook.com/docs/graph-api';
+    const apiUrl = 'https://graph.facebook.com/v14.0/me';
     const params = {
-      fields: 'impressions,cpm,ctr,clicks,amount_spent,purchases,cost_per_purchase',
+      fields: 'id,name',
       date_preset: 'last_30_days',
       access_token: META_GRAPH_API_KEY,
     };
@@ -21,35 +21,34 @@ const fetchMetaData = async () => {
       },
     });
 
-    const insights = data.data;
+    const insights = [data];
+    const doc = new GoogleSpreadsheet(SPREADSHEET_ID);
+    await doc.useServiceAccountAuth(require('./credentials.json'));
+    await doc.loadInfo();
 
-    // const doc = new GoogleSpreadsheet(SPREADSHEET_ID);
-    // await doc.useServiceAccountAuth(require('./credentials.json'));
-    // await doc.loadInfo();
+    const sheet = doc.sheetsByTitle[SHEET_NAME]; // Change to sheetsByTitle to select the sheet by name
 
-    // const sheet = doc.sheetsByTitle[SHEET_NAME]; // Change to sheetsByTitle to select the sheet by name
+    // Clear existing data in the sheet (optional, you can remove this line if you don't want to clear data)
+    await sheet.clear();
 
-    // // Clear existing data in the sheet (optional, you can remove this line if you don't want to clear data)
-    // await sheet.clear();
+    // Add headers to the Google Sheet using setHeaderRow
+    await sheet.setHeaderRow(['impressions', 'cpm', 'ctr', 'clicks', 'amount_spent', 'purchases', 'cost_per_purchase']);
 
-    // // Add headers to the Google Sheet using setHeaderRow
-    // await sheet.setHeaderRow(['impressions', 'cpm', 'ctr', 'clicks', 'amount_spent', 'purchases', 'cost_per_purchase']);
-
-    // // Add rows to the Google Sheet
-    // await sheet.addRows(insights.map((insight) => ({
-    //   impressions: insight.impressions,
-    //   cpm: insight.cpm,
-    //   ctr: insight.ctr,
-    //   clicks: insight.clicks,
-    //   amount_spent: insight.amount_spent,
-    //   purchases: insight.purchases,
-    //   cost_per_purchase: insight.cost_per_purchase,
-    // })));
+    // Add rows to the Google Sheet
+    await sheet.addRows(insights.map((insight) => ({
+      impressions: insight.impressions,
+      cpm: insight.cpm,
+      ctr: insight.ctr,
+      clicks: insight.clicks,
+      amount_spent: insight.amount_spent,
+      purchases: insight.purchases,
+      cost_per_purchase: insight.cost_per_purchase,
+    })));
 
     // Write CSV data to a file (optional, you can remove this part if not needed)
-    const csvData = 'impressions,cpm,ctr,clicks,amount_spent,purchases,cost_per_purchase\n' +
+    const csvData = 'id,name\n' +
       insights.map((insight) =>
-        `${insight.impressions},${insight.cpm},${insight.ctr},${insight.clicks},${insight.amount_spent},${insight.purchases},${insight.cost_per_purchase}`
+        `${insight.id},${insight.name}`
       ).join('\n');
 
     fs.writeFileSync('meta_data.csv', csvData);
@@ -61,3 +60,7 @@ const fetchMetaData = async () => {
 fetchMetaData();
 
 setInterval(fetchMetaData, 3600000); // Update data every hour
+
+
+
+// https://graph.facebook.com/10232406119193497?fields=id,name&access_token=EAAKOjYZBHVlwBO3mEZAkSoyDsacSn5pTNzKAb4DjSZAWOiEFigwkWPtCyqMw0VYxKLZBFig5L9ZBeLZCwTn7AmhHuJGjxyQAB1I38ZBGGuJtHT614QkA8TukoNZAZBeL0EFFJnuHuIizm7FWdENbi1Wep1IKhZAMFa75jVXnRZCgL08f0WbrS2nAGzvFmdMhP8ZD
